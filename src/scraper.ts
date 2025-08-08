@@ -304,18 +304,29 @@ export class NorthDataScraper {
         const elementsWithClass = sectionClone.querySelectorAll('[class]');
         elementsWithClass.forEach(el => el.removeAttribute('class'));
         
-        // Remove all links (a tags) but keep their text content
+        // Remove links selectively - keep only northdata.de/{path} links, but not ?id= links
         const links = sectionClone.querySelectorAll('a');
         links.forEach(link => {
-          // Create a text node with the link's text content
-          if (link.textContent) {
-            const textNode = document.createTextNode(link.textContent);
-            // Replace the link with just its text content
-            link.parentNode?.replaceChild(textNode, link);
-          } else {
-            // If the link has no text content, just remove it
-            link.remove();
+          const href = link.getAttribute('href');
+          
+          // Check if this is a link we want to keep
+          const shouldKeepLink = href && 
+            href.startsWith('https://www.northdata.de/') && 
+            !href.includes('?id=') &&
+            href !== 'https://www.northdata.de/'; // Don't keep the root URL
+          
+          if (!shouldKeepLink) {
+            // Remove the link but keep its text content
+            if (link.textContent) {
+              const textNode = document.createTextNode(link.textContent);
+              // Replace the link with just its text content
+              link.parentNode?.replaceChild(textNode, link);
+            } else {
+              // If the link has no text content, just remove it
+              link.remove();
+            }
           }
+          // If shouldKeepLink is true, we leave the link as is
         });
         
         // Remove all images
@@ -343,9 +354,20 @@ export class NorthDataScraper {
         allElements.forEach(el => {
           const attributes = Array.from(el.attributes);
           attributes.forEach(attr => {
-            // Remove all event handlers and non-essential attributes
-            if (attr.name.startsWith('on') || 
-                attr.name === 'href' || 
+            // For links, only remove href if it's not a northdata.de/{path} link we want to keep
+            if (attr.name === 'href' && el.tagName.toLowerCase() === 'a') {
+              const href = attr.value;
+              const shouldKeepLink = href && 
+                href.startsWith('https://www.northdata.de/') && 
+                !href.includes('?id=') &&
+                href !== 'https://www.northdata.de/';
+              
+              if (!shouldKeepLink) {
+                el.removeAttribute(attr.name);
+              }
+            }
+            // Remove all other non-essential attributes
+            else if (attr.name.startsWith('on') || 
                 attr.name === 'src' || 
                 attr.name === 'id' || 
                 attr.name === 'target' || 
