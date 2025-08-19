@@ -310,12 +310,23 @@ export class NorthDataScraper {
           const href = link.getAttribute('href');
           
           // Check if this is a link we want to keep
-          const shouldKeepLink = href && 
-            href.startsWith('https://www.northdata.de/') && 
-            !href.includes('?id=') &&
-            href !== 'https://www.northdata.de/'; // Don't keep the root URL
+          const shouldKeepLink = href && (
+            // Absolute northdata.de links (but not root URL or ?id= links)
+            (href.startsWith('https://www.northdata.de/') && 
+             !href.includes('?id=') &&
+             href !== 'https://www.northdata.de/') ||
+            // Relative links starting with / (but not ?id= links or root)
+            (href.startsWith('/') && 
+             !href.includes('?id=') &&
+             href !== '/')
+          );
           
-          if (!shouldKeepLink) {
+          if (shouldKeepLink) {
+            // Convert relative links to absolute links
+            if (href && href.startsWith('/') && !href.startsWith('https://')) {
+              link.setAttribute('href', 'https://www.northdata.de' + href);
+            }
+          } else {
             // Remove the link but keep its text content
             if (link.textContent) {
               const textNode = document.createTextNode(link.textContent);
@@ -326,7 +337,6 @@ export class NorthDataScraper {
               link.remove();
             }
           }
-          // If shouldKeepLink is true, we leave the link as is
         });
         
         // Remove all images
@@ -357,10 +367,16 @@ export class NorthDataScraper {
             // For links, only remove href if it's not a northdata.de/{path} link we want to keep
             if (attr.name === 'href' && el.tagName.toLowerCase() === 'a') {
               const href = attr.value;
-              const shouldKeepLink = href && 
-                href.startsWith('https://www.northdata.de/') && 
-                !href.includes('?id=') &&
-                href !== 'https://www.northdata.de/';
+              const shouldKeepLink = href && (
+                // Absolute northdata.de links (but not root URL or ?id= links)
+                (href.startsWith('https://www.northdata.de/') && 
+                 !href.includes('?id=') &&
+                 href !== 'https://www.northdata.de/') ||
+                // Relative links starting with / (but not ?id= links or root) - these should have been converted to absolute already
+                (href.startsWith('/') && 
+                 !href.includes('?id=') &&
+                 href !== '/')
+              );
               
               if (!shouldKeepLink) {
                 el.removeAttribute(attr.name);
