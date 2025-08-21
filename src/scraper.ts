@@ -245,7 +245,7 @@ export class NorthDataScraper {
   /**
    * Get page content from a specific northdata.de URL
    */
-  public async getPageContent(url: string, retryCount = 0): Promise<PageContentResult> {
+  public async getPageContent(url: string, shouldRemoveElements = true, retryCount = 0): Promise<PageContentResult> {
     if (!this.browser) {
       await this.initialize();
     }
@@ -271,7 +271,7 @@ export class NorthDataScraper {
       await navigateAndWait(page, url);
       
       // Extract only the main content section and clean the HTML
-      const cleanedHtml = await page.evaluate(() => {
+      const cleanedHtml = await page.evaluate((shouldRemoveElements: boolean) => {
         // Find the main content section
         const mainSection = document.evaluate(
           '/html/body/main/div/section', 
@@ -288,6 +288,17 @@ export class NorthDataScraper {
         // Clone the section to avoid modifying the original DOM
         const sectionClone = mainSection.cloneNode(true) as HTMLElement;
         
+        // Remove elements with specific classes if shouldRemoveElements is true
+        if (shouldRemoveElements) {
+          // Remove elements with class "history ui"
+          const historyElements = sectionClone.querySelectorAll('.history.ui, [class*="history ui"], [class*="history"][class*="ui"]');
+          historyElements.forEach(el => el.remove());
+          
+          // Remove elements with class "network ui"
+          const networkElements = sectionClone.querySelectorAll('.network.ui, [class*="network ui"], [class*="network"][class*="ui"]');
+          networkElements.forEach(el => el.remove());
+        }
+        
         // Remove all script tags
         const scripts = sectionClone.querySelectorAll('script');
         scripts.forEach(script => script.remove());
@@ -300,7 +311,7 @@ export class NorthDataScraper {
         const elementsWithStyle = sectionClone.querySelectorAll('[style]');
         elementsWithStyle.forEach(el => el.removeAttribute('style'));
         
-        // Remove all class attributes (which often reference CSS)
+        // Remove all class attributes (which often reference CSS) - but do this after removing specific elements
         const elementsWithClass = sectionClone.querySelectorAll('[class]');
         elementsWithClass.forEach(el => el.removeAttribute('class'));
         
@@ -433,7 +444,7 @@ export class NorthDataScraper {
           .replace(/\s*(<\/?(?:div|p|section|table|tr|td|th|ul|ol|li|h[1-6])[^>]*>)\s*/g, '$1');
         
         return html;
-      });
+      }, shouldRemoveElements);
       
       const currentUrl = page.url();
       
@@ -455,7 +466,7 @@ export class NorthDataScraper {
         // Reset browser for next attempt
         await this.close();
         await this.initialize();
-        return this.getPageContent(url, retryCount + 1);
+        return this.getPageContent(url, shouldRemoveElements, retryCount + 1);
       }
       
       console.error('Page content request failed after retries:', error);

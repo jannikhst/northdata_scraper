@@ -1,82 +1,56 @@
-# NorthData Scraper
+# NorthData Scraper API
 
-Docker-based service that scrapes northdata.de via a REST API.
+REST API for scraping northdata.de content, optimized for agentic workflows.
+
+## Quick Start
+
+1. Copy `.env.example` to `.env` and add your northdata.de credentials
+2. Run with Docker: `docker-compose up --build`
+3. API available at `http://localhost:3000`
+
+## API Endpoints
+
+### GET /page
+Get cleaned HTML content from a northdata.de page.
+```
+GET /page?url=https://www.northdata.de/example
+GET /page?url=https://www.northdata.de/example&removeElements=false
+```
+- `url`: northdata.de URL (required)
+- `removeElements`: Remove "history ui" and "network ui" elements (default: true)
+
+### POST /search
+Search for companies or people.
+```
+POST /search
+Content-Type: application/json
+{"query": "Company Name or Person Name"}
+```
+
+### GET /suggest
+Get search suggestions.
+```
+GET /suggest?query=Company
+```
+
+### GET /health
+Service health check.
 
 ## Features
 
-- Docker setup with memory limits
-- Puppeteer with stealth plugin
-- Express REST API
-- In-memory queue for sequential processing
-- Request blocking for api.rupt.dev
-- Human-like behavior with slow typing
-- Debug mode with visible browser window
+- **Agentic Workflow Ready**: Clean, minimal HTML output optimized for AI processing
+- **Token Efficient**: Removes unnecessary elements to reduce token count
+- **Element Filtering**: Optional removal of specific UI elements
+- **Request Blocking**: Blocks api.rupt.dev requests
+- **Queue System**: Sequential processing to avoid rate limits
+- **Stealth Mode**: Human-like behavior to avoid detection
+- **Docker Ready**: Easy deployment with memory limits
 
-## Setup
+## Development
 
-1. Clone the repository and navigate to the directory
-2. Create a `.env` file from `.env.example`
-3. Add your northdata.de credentials to `.env`
-
-## Running
-
-With Docker:
-```
-docker-compose up --build
-```
-
-For development:
-```
+```bash
 npm install
 npm run dev
 ```
 
-## API Endpoints
-
-### Search
-```
-POST /search
-Content-Type: application/json
-Body: {"query": "Company Name"}
-```
-Returns HTML content of search results.
-
-### Suggestions
-```
-GET /suggest?query=Company
-```
-Returns JSON suggestions from northdata.de's suggestion API.
-
-### Page Content
-```
-GET /page?url=https://www.northdata.de/...
-```
-Returns cleaned HTML content of a specific page, with:
-- Only the main content section
-- No JavaScript, CSS, links, images, or non-informational elements
-- Minimal whitespace to reduce token count for downstream AI processing
-
-### Health Check
-```
-GET /health
-```
-Returns status of the service and queue information.
-
-## Configuration
-
-Key environment variables:
-- `PORT`: Server port (default: 3000)
-- `NORTHDATA_USERNAME`: northdata.de username
-- `NORTHDATA_PASSWORD`: northdata.de password
-- `BROWSER_HEADLESS`: Set to 'false' for debug mode
-- `TYPING_DELAY_MIN/MAX`: Keystroke delay in ms
-- `WAIT_FOR_NETWORK_IDLE`: Wait for network idle after navigation
-
-## Debug Mode
-
-Set `BROWSER_HEADLESS=false` in `.env` to see browser interactions.
-
-For Docker debugging (Linux only):
-```
-docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
-```
+Set `BROWSER_HEADLESS=false` in `.env` for debug mode.

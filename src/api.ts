@@ -31,6 +31,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.get('/page', async (req: Request, res: Response) => {
   try {
     const url = req.query.url as string;
+    const removeElements = req.query.removeElements as string;
 
     if (!url || typeof url !== 'string') {
       return res.status(400).json({
@@ -45,11 +46,14 @@ app.get('/page', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`Received page content request for: ${url}`);
+    // Parse removeElements parameter - default to 'true' (remove by default)
+    const shouldRemoveElements = removeElements !== 'false';
+
+    console.log(`Received page content request for: ${url}, removeElements: ${shouldRemoveElements}`);
 
     // Add page content request to queue
     const result = await pageContentQueue.enqueue(async () => {
-      return await scraper.getPageContent(url);
+      return await scraper.getPageContent(url, shouldRemoveElements);
     });
 
     // Return the HTML content
